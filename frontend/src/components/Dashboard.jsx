@@ -4,7 +4,7 @@ import CandidateCard from './CandidateCard';
 import CandidateForm from './CandidateForm';
 import SearchFilter from './SearchFilter';
 
-function Dashboard() {
+function Dashboard({ user, onLogout, onLoginClick }) {
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -70,12 +70,11 @@ function Dashboard() {
     };
 
     const getStats = () => {
-        return {
-            total: candidates.length,
-            pending: candidates.filter(c => c.status === 'Pending').length,
-            reviewed: candidates.filter(c => c.status === 'Reviewed').length,
-            hired: candidates.filter(c => c.status === 'Hired').length
-        };
+        const total = candidates.length;
+        const pending = candidates.filter(c => c.status === 'Pending').length;
+        const reviewed = candidates.filter(c => c.status === 'Reviewed').length;
+        const hired = candidates.filter(c => c.status === 'Hired').length;
+        return { total, pending, reviewed, hired };
     };
 
     const stats = getStats();
@@ -102,13 +101,23 @@ function Dashboard() {
                             <p className="subtitle">Manage your candidate referrals efficiently</p>
                         </div>
                     </div>
-                    <button onClick={() => setShowForm(true)} className="btn-primary add-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Refer Candidate
-                    </button>
+                    <div className="header-actions">
+                        <button onClick={() => setShowForm(true)} className="btn-primary add-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Refer Candidate
+                        </button>
+                        {user ? (
+                            <div className="user-menu">
+                                <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
+                                <button onClick={onLogout} className="btn-secondary logout-btn">Logout</button>
+                            </div>
+                        ) : (
+                            <button onClick={onLoginClick} className="btn-secondary login-btn">Login</button>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -196,13 +205,23 @@ function Dashboard() {
                 ) : (
                     <div className="candidates-grid">
                         {candidates.map(candidate => (
-                            <CandidateCard key={candidate._id} candidate={candidate} onStatusUpdate={handleStatusUpdate} onDelete={handleDelete} />
+                            <CandidateCard
+                                key={candidate._id}
+                                candidate={candidate}
+                                onStatusUpdate={handleStatusUpdate}
+                                onDelete={handleDelete}
+                            />
                         ))}
                     </div>
                 )}
             </main>
 
-            {showForm && <CandidateForm onSubmit={handleCreateCandidate} onClose={() => setShowForm(false)} />}
+            {showForm && (
+                <CandidateForm
+                    onSubmit={handleCreateCandidate}
+                    onClose={() => setShowForm(false)}
+                />
+            )}
         </div>
     );
 }
