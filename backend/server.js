@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const candidateRoutes = require('./routes/candidateRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -36,13 +37,26 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
-    res.status(200).json({ success: true, message: 'Candidate Referral Management API', version: '1.0.0' });
+    res.status(200).json({
+        success: true,
+        message: 'Candidate Referral Management API',
+        version: '1.0.0',
+        endpoints: {
+            candidates: '/api/candidates',
+            health: '/api/health'
+        }
+    });
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/candidates', candidateRoutes);
 
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ success: true, message: 'Server is running' });
+    res.status(200).json({
+        success: true,
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
 });
 
 app.use((req, res) => {
@@ -72,7 +86,7 @@ if (!fs.existsSync(uploadsDir)) {
 if (process.env.VERCEL !== '1') {
     const PORT = process.env.PORT || 5001;
     app.listen(PORT, () => {
-        console.log('Server running on port ' + PORT);
+        console.log(`Server running on port ${PORT}`);
     });
 }
 
