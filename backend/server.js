@@ -78,15 +78,14 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 if (process.env.VERCEL !== '1') {
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
     const PORT = process.env.PORT || 5001;
     app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+        console.log('Server running on port ' + PORT);
     });
 }
 
