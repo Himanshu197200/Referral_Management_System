@@ -1,21 +1,14 @@
 const Candidate = require('../models/Candidate');
 const cloudinary = require('../config/cloudinary');
 
-const sanitizeFilename = (filename) => {
-    return filename
-        .replace(/\s+/g, '_')
-        .replace(/[()]/g, '')
-        .replace(/[^a-zA-Z0-9_.-]/g, '')
-        .toLowerCase();
-};
-
 const uploadToCloudinary = (buffer, filename) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 resource_type: 'raw',
                 folder: 'referral-resumes',
-                public_id: filename
+                public_id: filename,
+                type: 'authenticated'
             },
             (error, result) => {
                 if (error) reject(error);
@@ -26,6 +19,14 @@ const uploadToCloudinary = (buffer, filename) => {
     });
 };
 
+const generateSignedUrl = (publicId) => {
+    return cloudinary.url(publicId, {
+        resource_type: 'raw',
+        type: 'authenticated',
+        sign_url: true,
+        expires_at: Math.floor(Date.now() / 1000) + 3600
+    });
+};
 
 
 
@@ -36,12 +37,20 @@ const deleteFromCloudinary = async (url) => {
         const filenameWithExt = parts[parts.length - 1];
         const filename = filenameWithExt.replace('.pdf', '');
         const publicId = 'referral-resumes/' + filename;
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+
+        try {
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'raw', type: 'authenticated' });
+        } catch {
+            try {
+                await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+            } catch {
+                await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+            }
+        }
     } catch (error) {
         console.error('Error deleting from Cloudinary:', error);
     }
 };
-
 
 
 
@@ -67,7 +76,7 @@ const createCandidate = async (req, res) => {
         };
 
         if (req.file) {
-            const filename = Date.now() + '-' + sanitizeFilename(req.file.originalname);
+            const filename = Date.now() + '-' + req.file.originalname.replace(/\s+/g, '_');
             const result = await uploadToCloudinary(req.file.buffer, filename);
             candidateData.resumeUrl = result.secure_url;
         }
@@ -261,9 +270,22 @@ const getResumeUrl = async (req, res) => {
             });
         }
 
+        const url = candidate.resumeUrl;
+
+        if (url.includes('cloudinary') && url.includes('/authenticated/')) {
+            const publicIdMatch = url.match(/referral-resumes\/[^.]+/);
+            if (publicIdMatch) {
+                const signedUrl = generateSignedUrl(publicIdMatch[0]);
+                return res.status(200).json({
+                    success: true,
+                    data: { resumeUrl: signedUrl }
+                });
+            }
+        }
+
         res.status(200).json({
             success: true,
-            data: { resumeUrl: candidate.resumeUrl }
+            data: { resumeUrl: url }
         });
     } catch (error) {
         res.status(500).json({
