@@ -6,7 +6,7 @@ const createCandidate = async (req, res) => {
     try {
         const { name, email, phone, jobTitle } = req.body;
 
-        const existingCandidate = await Candidate.findOne({ email });
+        const existingCandidate = await Candidate.findOne({ email, userId: req.user._id });
         if (existingCandidate) {
             if (req.file) {
                 fs.unlinkSync(req.file.path);
@@ -22,7 +22,8 @@ const createCandidate = async (req, res) => {
             email,
             phone,
             jobTitle,
-            status: 'Pending'
+            status: 'Pending',
+            userId: req.user._id
         };
 
         if (req.file) {
@@ -59,7 +60,7 @@ const createCandidate = async (req, res) => {
 const getAllCandidates = async (req, res) => {
     try {
         const { status, jobTitle, search } = req.query;
-        let filter = {};
+        let filter = { userId: req.user._id };
 
         if (status && status !== 'All') {
             filter.status = status;
@@ -133,8 +134,8 @@ const updateCandidateStatus = async (req, res) => {
             });
         }
 
-        const candidate = await Candidate.findByIdAndUpdate(
-            req.params.id,
+        const candidate = await Candidate.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user._id },
             { status },
             { new: true, runValidators: true }
         );
@@ -167,7 +168,7 @@ const updateCandidateStatus = async (req, res) => {
 
 const deleteCandidate = async (req, res) => {
     try {
-        const candidate = await Candidate.findById(req.params.id);
+        const candidate = await Candidate.findOne({ _id: req.params.id, userId: req.user._id });
 
         if (!candidate) {
             return res.status(404).json({

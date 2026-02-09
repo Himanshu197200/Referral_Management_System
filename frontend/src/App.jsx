@@ -7,7 +7,7 @@ import './App.css';
 
 function AppContent() {
   const { user, loading, logout } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [showRegister, setShowRegister] = useState(false);
 
   if (loading) {
     return (
@@ -20,24 +20,19 @@ function AppContent() {
     );
   }
 
-  const handleLoginClick = () => setCurrentPage('login');
-  const handleRegisterClick = () => setCurrentPage('register');
-  const handleBackToDashboard = () => setCurrentPage('dashboard');
-
-  if (currentPage === 'login' && !user) {
+  if (!user) {
+    if (showRegister) {
+      return (
+        <Register
+          onSwitchToLogin={() => setShowRegister(false)}
+          onBack={() => setShowRegister(false)}
+        />
+      );
+    }
     return (
       <Login
-        onSwitchToRegister={handleRegisterClick}
-        onBack={handleBackToDashboard}
-      />
-    );
-  }
-
-  if (currentPage === 'register' && !user) {
-    return (
-      <Register
-        onSwitchToLogin={handleLoginClick}
-        onBack={handleBackToDashboard}
+        onSwitchToRegister={() => setShowRegister(true)}
+        onBack={() => { }}
       />
     );
   }
@@ -47,7 +42,7 @@ function AppContent() {
       <Dashboard
         user={user}
         onLogout={logout}
-        onLoginClick={handleLoginClick}
+        onLoginClick={() => { }}
       />
     </div>
   );

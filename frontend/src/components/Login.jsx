@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-function Login({ onSwitchToRegister, onBack }) {
+function Login({ onSwitchToRegister }) {
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -14,9 +14,7 @@ function Login({ onSwitchToRegister, onBack }) {
         setLoading(true);
 
         const result = await login(email, password);
-        if (result.success) {
-            onBack();
-        } else {
+        if (!result.success) {
             setError(result.message);
         }
         setLoading(false);
@@ -24,13 +22,6 @@ function Login({ onSwitchToRegister, onBack }) {
 
     return (
         <div className="auth-page">
-            <button className="back-btn" onClick={onBack}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Back to Dashboard
-            </button>
             <div className="auth-container">
                 <div className="auth-card">
                     <div className="auth-header">

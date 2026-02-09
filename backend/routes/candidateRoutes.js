@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/upload');
+const { protect } = require('../middlewares/auth');
 const { createCandidate, getAllCandidates, getCandidateById, updateCandidateStatus, deleteCandidate } = require('../controllers/candidateController');
 
-router.post('/', upload.single('resume'), createCandidate);
-router.get('/', getAllCandidates);
-router.get('/:id', getCandidateById);
-router.put('/:id/status', updateCandidateStatus);
-router.delete('/:id', deleteCandidate);
+router.post('/', protect, upload.single('resume'), createCandidate);
+router.get('/', protect, getAllCandidates);
+router.get('/:id', protect, getCandidateById);
+router.put('/:id/status', protect, updateCandidateStatus);
+router.delete('/:id', protect, deleteCandidate);
 
 module.exports = router;

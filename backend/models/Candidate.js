@@ -39,6 +39,11 @@ const candidateSchema = new mongoose.Schema({
     resumeUrl: {
         type: String,
         default: null
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     }
 }, {
     timestamps: true

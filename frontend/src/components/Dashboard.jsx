@@ -18,6 +18,11 @@ function Dashboard({ user, onLogout, onLoginClick }) {
     };
 
     const fetchCandidates = async () => {
+        if (!user) {
+            setCandidates([]);
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
             const response = await candidateService.getAllCandidates(filters);
@@ -32,7 +37,7 @@ function Dashboard({ user, onLogout, onLoginClick }) {
 
     useEffect(() => {
         fetchCandidates();
-    }, [filters]);
+    }, [filters, user]);
 
     const handleCreateCandidate = async (candidateData) => {
         try {
@@ -102,13 +107,15 @@ function Dashboard({ user, onLogout, onLoginClick }) {
                         </div>
                     </div>
                     <div className="header-actions">
-                        <button onClick={() => setShowForm(true)} className="btn-primary add-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            Refer Candidate
-                        </button>
+                        {user && (
+                            <button onClick={() => setShowForm(true)} className="btn-primary add-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Refer Candidate
+                            </button>
+                        )}
                         {user ? (
                             <div className="user-menu">
                                 <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
