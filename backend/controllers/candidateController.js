@@ -5,10 +5,12 @@ const uploadToCloudinary = (buffer, filename) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                resource_type: 'raw',
+                resource_type: 'auto',
                 folder: 'referral-resumes',
                 public_id: filename,
-                access_mode: 'public'
+                type: 'upload',
+                access_mode: 'public',
+                format: 'pdf'
             },
             (error, result) => {
                 if (error) reject(error);
@@ -20,16 +22,24 @@ const uploadToCloudinary = (buffer, filename) => {
 };
 
 
+
 const deleteFromCloudinary = async (url) => {
     try {
         const parts = url.split('/');
         const filenameWithExt = parts[parts.length - 1];
-        const publicId = 'referral-resumes/' + filenameWithExt;
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+        const filename = filenameWithExt.replace('.pdf', '');
+        const publicId = 'referral-resumes/' + filename;
+
+        try {
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        } catch {
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+        }
     } catch (error) {
         console.error('Error deleting from Cloudinary:', error);
     }
 };
+
 
 const createCandidate = async (req, res) => {
     try {
