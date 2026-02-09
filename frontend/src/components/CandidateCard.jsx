@@ -3,6 +3,7 @@ import { getBackendUrl } from '../services/api';
 
 function CandidateCard({ candidate, onStatusUpdate, onDelete }) {
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isLoadingResume, setIsLoadingResume] = useState(false);
 
     const getStatusClass = (status) => {
         if (status === 'Pending') return 'status-pending';
@@ -27,6 +28,32 @@ function CandidateCard({ candidate, onStatusUpdate, onDelete }) {
     const handleDelete = () => {
         if (window.confirm(`Are you sure you want to delete ${candidate.name}?`)) {
             onDelete(candidate._id);
+        }
+    };
+
+    const handleViewResume = async (e) => {
+        e.preventDefault();
+        setIsLoadingResume(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${getBackendUrl()}/api/candidates/${candidate._id}/resume`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.resumeUrl) {
+                window.open(data.data.resumeUrl, '_blank');
+            } else {
+                window.open(candidate.resumeUrl, '_blank');
+            }
+        } catch (error) {
+            window.open(candidate.resumeUrl, '_blank');
+        } finally {
+            setIsLoadingResume(false);
         }
     };
 
@@ -69,11 +96,11 @@ function CandidateCard({ candidate, onStatusUpdate, onDelete }) {
                     <span>Referred on {formatDate(candidate.createdAt)}</span>
                 </div>
                 {candidate.resumeUrl && (
-                    <a
-                        href={candidate.resumeUrl.startsWith('http') ? candidate.resumeUrl : getBackendUrl() + candidate.resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        onClick={handleViewResume}
+                        disabled={isLoadingResume}
                         className="resume-link"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -82,8 +109,8 @@ function CandidateCard({ candidate, onStatusUpdate, onDelete }) {
                             <line x1="16" y1="17" x2="8" y2="17"></line>
                             <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
-                        View Resume
-                    </a>
+                        {isLoadingResume ? 'Loading...' : 'View Resume'}
+                    </button>
                 )}
             </div>
 
@@ -105,3 +132,4 @@ function CandidateCard({ candidate, onStatusUpdate, onDelete }) {
 }
 
 export default CandidateCard;
+

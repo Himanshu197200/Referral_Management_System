@@ -5,12 +5,10 @@ const uploadToCloudinary = (buffer, filename) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                resource_type: 'auto',
+                resource_type: 'raw',
                 folder: 'referral-resumes',
                 public_id: filename,
-                type: 'upload',
-                access_mode: 'public',
-                format: 'pdf'
+                type: 'authenticated'
             },
             (error, result) => {
                 if (error) reject(error);
@@ -20,6 +18,16 @@ const uploadToCloudinary = (buffer, filename) => {
         uploadStream.end(buffer);
     });
 };
+
+const generateSignedUrl = (publicId) => {
+    return cloudinary.url(publicId, {
+        resource_type: 'raw',
+        type: 'authenticated',
+        sign_url: true,
+        expires_at: Math.floor(Date.now() / 1000) + 3600
+    });
+};
+
 
 
 
@@ -31,14 +39,19 @@ const deleteFromCloudinary = async (url) => {
         const publicId = 'referral-resumes/' + filename;
 
         try {
-            await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'raw', type: 'authenticated' });
         } catch {
-            await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+            try {
+                await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+            } catch {
+                await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+            }
         }
     } catch (error) {
         console.error('Error deleting from Cloudinary:', error);
     }
 };
+
 
 
 const createCandidate = async (req, res) => {
@@ -236,10 +249,57 @@ const deleteCandidate = async (req, res) => {
     }
 };
 
+const getResumeUrl = async (req, res) => {
+    try {
+        const candidate = await Candidate.findOne({
+            _id: req.params.id,
+            userId: req.user._id
+        });
+
+        if (!candidate) {
+            return res.status(404).json({
+                success: false,
+                message: 'Candidate not found'
+            });
+        }
+
+        if (!candidate.resumeUrl) {
+            return res.status(404).json({
+                success: false,
+                message: 'No resume found for this candidate'
+            });
+        }
+
+        const url = candidate.resumeUrl;
+
+        if (url.includes('cloudinary') && url.includes('/authenticated/')) {
+            const publicIdMatch = url.match(/referral-resumes\/[^.]+/);
+            if (publicIdMatch) {
+                const signedUrl = generateSignedUrl(publicIdMatch[0]);
+                return res.status(200).json({
+                    success: true,
+                    data: { resumeUrl: signedUrl }
+                });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: { resumeUrl: url }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error while getting resume URL'
+        });
+    }
+};
+
 module.exports = {
     createCandidate,
     getAllCandidates,
     getCandidateById,
     updateCandidateStatus,
-    deleteCandidate
+    deleteCandidate,
+    getResumeUrl
 };
