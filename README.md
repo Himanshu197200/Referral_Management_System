@@ -2,18 +2,19 @@
 
 A full-stack MERN application for managing candidate referrals. This system allows users to refer candidates, view them on a dashboard, update their status, and manage referrals end-to-end.
 
-## 🚀 Live Demo
+## Live Demo
 
-- **Frontend**: [Your Vercel Frontend URL]
-- **Backend API**: [Your Vercel Backend URL]
+- **Frontend**: https://referral-management-system-three.vercel.app/
+- **Backend API**: https://referral-management-system-backend.vercel.app/
 
 ## Tech Stack
 
-- **Frontend**: React (Vite) with functional components and hooks
+- **Frontend**: React (Vite)
 - **Backend**: Node.js + Express
 - **Database**: MongoDB Atlas
+- **Storage**: Cloudinary (for PDF Resumes)
 - **Deployment**: Vercel (both frontend and backend)
-- **File Upload**: Multer (PDF only)
+- **Authentication**: JWT (JSON Web Tokens)
 
 ## Features
 
@@ -24,17 +25,22 @@ A full-stack MERN application for managing candidate referrals. This system allo
 - Filter candidates by status
 - Update candidate status directly from the UI
 - Delete candidates
+- View uploaded resume PDFs directly in browser
 
 ### Candidate Form
 - Submit new candidate referrals
 - Fields: Name, Email, Phone, Job Title, Resume (PDF)
 - Client-side and server-side validation
-- PDF file upload with size limit (5MB)
+- PDF file upload with size limit (5MB) powered by Cloudinary
+
+### Security
+- User Authentication with JWT
+- Protected routes for sensitive operations
+- Secure password hashing with bcrypt
 
 ### REST API Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | API info and available endpoints |
 | POST | `/api/candidates` | Create a new candidate |
 | GET | `/api/candidates` | Fetch all candidates (with optional filters) |
 | GET | `/api/candidates/:id` | Get a single candidate |
@@ -49,18 +55,22 @@ Referral_Management_System/
 ├── backend/
 │   ├── config/
 │   │   └── db.js
+│   │   └── cloudinary.js
 │   ├── controllers/
 │   │   └── candidateController.js
+│   │   └── authController.js
 │   ├── models/
 │   │   └── Candidate.js
+│   │   └── User.js
 │   ├── routes/
 │   │   └── candidateRoutes.js
+│   │   └── authRoutes.js
 │   ├── middlewares/
 │   │   └── upload.js
+│   │   └── auth.js
 │   ├── .env.example
 │   ├── package.json
 │   ├── server.js
-│   ├── seed.js
 │   └── vercel.json
 │
 ├── frontend/
@@ -69,9 +79,13 @@ Referral_Management_System/
 │   │   │   ├── CandidateCard.jsx
 │   │   │   ├── CandidateForm.jsx
 │   │   │   ├── Dashboard.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
 │   │   │   └── SearchFilter.jsx
 │   │   ├── services/
 │   │   │   └── api.js
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
 │   │   ├── App.jsx
 │   │   ├── App.css
 │   │   └── main.jsx
@@ -101,11 +115,15 @@ cd backend
 npm install
 ```
 
-Create `.env` file:
+Create `.env` file based on `.env.example`:
 ```env
 PORT=5001
 MONGODB_URI=mongodb://localhost:27017/referral_management
 CLIENT_URL=http://localhost:5173
+JWT_SECRET=your_jwt_secret_key
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
 Start the backend:
@@ -117,184 +135,74 @@ npm run dev
 ```bash
 cd frontend
 npm install
+```
+
+Create `.env` file based on `.env.example`:
+```env
+VITE_API_URL=http://localhost:5001/api
+```
+
+Start the frontend:
+```bash
 npm run dev
 ```
 
-### 4. Seed Database (Optional)
-```bash
-cd backend
-npm run seed
-```
-
-### 5. Access the Application
+### 4. Access the Application
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5001
 
 ---
 
-## 🌐 Deployment to Vercel
+## Deployment to Vercel
 
 ### Prerequisites
-- [Vercel Account](https://vercel.com/signup)
-- [Vercel CLI](https://vercel.com/cli) (optional)
+- Vercel Account
 - MongoDB Atlas account with cluster
+- Cloudinary Account (for resume uploads)
 
-### Step 1: Set Up MongoDB Atlas
-
-1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create a free cluster
-3. Create a database user
-4. Whitelist IP address `0.0.0.0/0` (allow from anywhere)
-5. Get your connection string:
-   ```
-   mongodb+srv://<username>:<password>@cluster.xxxxx.mongodb.net/referral_management
-   ```
+### Step 1: Set Up MongoDB Atlas & Cloudinary
+1. Create a MongoDB Atlas cluster and get the connection string
+2. Create a Cloudinary account and get API credentials
 
 ### Step 2: Deploy Backend to Vercel
-
-1. **Push backend to GitHub** (if not already)
-
-2. **Import to Vercel**:
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Click "Add New" → "Project"
-   - Import your repository
-   - Set the **Root Directory** to `backend`
-
-3. **Configure Environment Variables**:
-   | Variable | Value |
-   |----------|-------|
-   | `MONGODB_URI` | Your MongoDB Atlas connection string |
-   | `CLIENT_URL` | Your frontend Vercel URL (add after frontend deploy) |
-
-4. **Deploy** and note your backend URL (e.g., `https://your-backend.vercel.app`)
+1. Import `backend` directory to Vercel
+2. Configure Environment Variables:
+   - `MONGODB_URI`
+   - `CLIENT_URL` (Your frontend URL)
+   - `JWT_SECRET`
+   - `CLOUDINARY_CLOUD_NAME`
+   - `CLOUDINARY_API_KEY`
+   - `CLOUDINARY_API_SECRET`
+3. Deploy
 
 ### Step 3: Deploy Frontend to Vercel
-
-1. **Import to Vercel**:
-   - Click "Add New" → "Project"
-   - Import the same repository
-   - Set the **Root Directory** to `frontend`
-
-2. **Configure Environment Variables**:
-   | Variable | Value |
-   |----------|-------|
-   | `VITE_API_URL` | `https://your-backend.vercel.app/api` |
-
-3. **Deploy** and note your frontend URL
+1. Import `frontend` directory to Vercel
+2. Configure Environment Variables:
+   - `VITE_API_URL` (Your backend URL + `/api`)
+3. Deploy
 
 ### Step 4: Update Backend CORS
-
-Go back to your backend project on Vercel and update:
-| Variable | Value |
-|----------|-------|
-| `CLIENT_URL` | `https://your-frontend.vercel.app` |
-
-Redeploy the backend for changes to take effect.
+Update `CLIENT_URL` in backend environment variables to match your deployed frontend URL.
 
 ---
 
 ## Environment Variables Reference
 
 ### Backend (.env)
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `PORT` | Server port (local only) | `5001` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb+srv://...` |
-| `CLIENT_URL` | Frontend URL(s) for CORS | `https://your-app.vercel.app` |
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Server port (local only) |
+| `MONGODB_URI` | MongoDB connection string |
+| `CLIENT_URL` | Frontend URL(s) for CORS |
+| `JWT_SECRET` | Secret key for signing tokens |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud Name |
+| `CLOUDINARY_API_KEY` | Cloudinary API Key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API Secret |
 
 ### Frontend (.env)
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `VITE_API_URL` | Backend API URL | `https://your-api.vercel.app/api` |
-
----
-
-## API Documentation
-
-### Create Candidate
-**POST** `/api/candidates`
-
-Request (multipart/form-data):
-```
-name: "John Doe"
-email: "john@example.com"
-phone: "1234567890"
-jobTitle: "Software Engineer"
-resume: [PDF file] (optional)
-```
-
-Response:
-```json
-{
-  "success": true,
-  "message": "Candidate referred successfully",
-  "data": {
-    "_id": "...",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "phone": "1234567890",
-    "jobTitle": "Software Engineer",
-    "status": "Pending",
-    "resumeUrl": "/uploads/filename.pdf",
-    "createdAt": "...",
-    "updatedAt": "..."
-  }
-}
-```
-
-### Get All Candidates
-**GET** `/api/candidates`
-
-Query Parameters:
-- `status`: Filter by status (Pending, Reviewed, Hired)
-- `search`: Search by name, email, or job title
-
-### Update Status
-**PUT** `/api/candidates/:id/status`
-
-Request:
-```json
-{
-  "status": "Reviewed"
-}
-```
-
-### Delete Candidate
-**DELETE** `/api/candidates/:id`
-
----
-
-## Scripts
-
-### Backend
-```bash
-npm start      # Start production server
-npm run dev    # Start development server
-npm run seed   # Seed database with sample data
-```
-
-### Frontend
-```bash
-npm run dev    # Start development server
-npm run build  # Build for production
-npm run preview # Preview production build
-```
-
----
-
-## Troubleshooting
-
-### CORS Issues
-- Ensure `CLIENT_URL` in backend includes your frontend domain
-- Multiple origins can be comma-separated: `https://app1.vercel.app,https://app2.vercel.app`
-- Vercel preview deployments are automatically allowed
-
-### Database Connection
-- Ensure MongoDB Atlas IP whitelist includes `0.0.0.0/0`
-- Check connection string format is correct
-
-### Build Failures
-- Ensure all dependencies are in `dependencies` (not `devDependencies`) for production
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API URL (e.g., `https://your-api.vercel.app/api`) |
 
 ---
 
