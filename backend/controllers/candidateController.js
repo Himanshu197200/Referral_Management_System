@@ -8,7 +8,7 @@ const createCandidate = async (req, res) => {
 
         const existingCandidate = await Candidate.findOne({ email, userId: req.user._id });
         if (existingCandidate) {
-            if (req.file) {
+            if (req.file && req.file.path) {
                 fs.unlinkSync(req.file.path);
             }
             return res.status(400).json({
@@ -26,8 +26,8 @@ const createCandidate = async (req, res) => {
             userId: req.user._id
         };
 
-        if (req.file) {
-            candidateData.resumeUrl = `/uploads/${req.file.filename}`;
+        if (req.file && req.file.filename) {
+            candidateData.resumeUrl = '/uploads/' + req.file.filename;
         }
 
         const candidate = await Candidate.create(candidateData);
@@ -38,7 +38,7 @@ const createCandidate = async (req, res) => {
             data: candidate
         });
     } catch (error) {
-        if (req.file) {
+        if (req.file && req.file.path) {
             fs.unlinkSync(req.file.path);
         }
 
