@@ -7,7 +7,8 @@ const uploadToCloudinary = (buffer, filename) => {
             {
                 resource_type: 'raw',
                 folder: 'referral-resumes',
-                public_id: filename
+                public_id: filename,
+                access_mode: 'public'
             },
             (error, result) => {
                 if (error) reject(error);
@@ -17,6 +18,7 @@ const uploadToCloudinary = (buffer, filename) => {
         uploadStream.end(buffer);
     });
 };
+
 
 const deleteFromCloudinary = async (url) => {
     try {
