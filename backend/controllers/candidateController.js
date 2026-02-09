@@ -1,6 +1,33 @@
 const Candidate = require('../models/Candidate');
-const fs = require('fs');
-const path = require('path');
+const cloudinary = require('../config/cloudinary');
+
+const uploadToCloudinary = (buffer, filename) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                resource_type: 'raw',
+                folder: 'referral-resumes',
+                public_id: filename
+            },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            }
+        );
+        uploadStream.end(buffer);
+    });
+};
+
+const deleteFromCloudinary = async (url) => {
+    try {
+        const parts = url.split('/');
+        const filenameWithExt = parts[parts.length - 1];
+        const publicId = 'referral-resumes/' + filenameWithExt;
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+    } catch (error) {
+        console.error('Error deleting from Cloudinary:', error);
+    }
+};
 
 const createCandidate = async (req, res) => {
     try {
@@ -8,9 +35,6 @@ const createCandidate = async (req, res) => {
 
         const existingCandidate = await Candidate.findOne({ email, userId: req.user._id });
         if (existingCandidate) {
-            if (req.file && req.file.path) {
-                fs.unlinkSync(req.file.path);
-            }
             return res.status(400).json({
                 success: false,
                 message: 'A candidate with this email already exists'
@@ -26,8 +50,10 @@ const createCandidate = async (req, res) => {
             userId: req.user._id
         };
 
-        if (req.file && req.file.filename) {
-            candidateData.resumeUrl = '/uploads/' + req.file.filename;
+        if (req.file) {
+            const filename = Date.now() + '-' + req.file.originalname.replace(/\s+/g, '_');
+            const result = await uploadToCloudinary(req.file.buffer, filename);
+            candidateData.resumeUrl = result.secure_url;
         }
 
         const candidate = await Candidate.create(candidateData);
@@ -38,10 +64,6 @@ const createCandidate = async (req, res) => {
             data: candidate
         });
     } catch (error) {
-        if (req.file && req.file.path) {
-            fs.unlinkSync(req.file.path);
-        }
-
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(err => err.message);
             return res.status(400).json({
@@ -50,6 +72,7 @@ const createCandidate = async (req, res) => {
             });
         }
 
+        console.error('Create candidate error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error while creating candidate'
@@ -177,11 +200,8 @@ const deleteCandidate = async (req, res) => {
             });
         }
 
-        if (candidate.resumeUrl) {
-            const filePath = path.join(__dirname, '..', candidate.resumeUrl);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
+        if (candidate.resumeUrl && candidate.resumeUrl.includes('cloudinary')) {
+            await deleteFromCloudinary(candidate.resumeUrl);
         }
 
         await Candidate.findByIdAndDelete(req.params.id);

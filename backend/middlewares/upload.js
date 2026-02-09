@@ -1,19 +1,6 @@
 const multer = require('multer');
-const path = require('path');
 
-const isVercel = process.env.VERCEL === '1';
-
-const diskStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const memoryStorage = multer.memoryStorage();
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
@@ -24,7 +11,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-    storage: isVercel ? memoryStorage : diskStorage,
+    storage: storage,
     fileFilter: fileFilter,
     limits: {
         fileSize: 5 * 1024 * 1024
